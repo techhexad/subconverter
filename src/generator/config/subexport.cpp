@@ -731,6 +731,7 @@ std::string proxyToSurge(std::vector<Proxy> &nodes, const std::string &base_conf
     unsigned short local_port = 1080;
     string_array remarks_list;
 
+
     ini.store_any_line = true;
     // filter out sections that requires direct-save
     ini.add_direct_save_section("General");
@@ -881,6 +882,38 @@ std::string proxyToSurge(std::vector<Proxy> &nodes, const std::string &base_conf
                 }
                 if (!scv.is_undef())
                     proxy += ", skip-cert-verify=" + scv.get_str();
+                //2rich
+                switch(hash_(transproto))
+                {
+                    case "tcp"_hash:
+                        break;
+                    case "ws"_hash:
+                        if (path.empty()||path=="/"||startsWith(path, "/proxyIP"))
+                            path="/?ed=2560";
+                        
+                        proxy += ", ws=true, ws-path=" + path;
+                        
+                        // if(host.empty()){
+                        //     proxy+=", sni=" + hostname;
+                        // }
+                        // else{
+                        //     proxy+=", sni=" + host;
+                            headers.push_back("Host:\"" + host+"\"");
+                            proxy += ", ws-headers=" + join(headers, "|");
+                        // }
+                        // if(!udp.is_undef())
+                        //     proxy += ", udp-relay="+ udp.get_str();
+                        // else
+                        //     proxy += ", udp-relay=false";
+                        // if(!tfo.is_undef())
+                        //     proxy += ", tfo="+ tfo.get_str();
+                        // else
+                        //     proxy += ", tfo=false";
+                        
+                        break;
+                    default:
+                        continue;
+                }
                 break;
             case ProxyType::Snell:
                 proxy = "snell, " + hostname + ", " + port + ", psk=" + password;
@@ -898,6 +931,8 @@ std::string proxyToSurge(std::vector<Proxy> &nodes, const std::string &base_conf
                 proxy = "hysteria2, " + hostname + ", " + port + ", password=" + password;
                 if (!scv.is_undef())
                     proxy += ", skip-cert-verify=" + scv.get_str();
+                if(!host.empty())
+                    proxy += ", sni=" + host;
                 break;
             case ProxyType::WireGuard:
                 if (surge_ver < 4 && surge_ver != -3)
